@@ -1,32 +1,32 @@
 export declare class OPVault {
   constructor(profile: JSON, items: Object);
-  unlock(masterPassword: String): Promise<true>;
+  unlock(masterPassword: string): Promise<true>;
   isUnlocked(): Boolean;
   lock(): Boolean;
   loadItems(): Promise<Object>;
   getItem(
-    title: String
+    title: string
   ): Promise<{
     overview: {
-      title: String;
-      url: String;
+      title: string;
+      url: string;
       tags: Array;
-      uuid: String;
+      uuid: string;
       URLs: Array;
     };
     detail: {
       fields: [
         {
-          type: String;
-          value: String;
-          designation: String;
-          name: String;
+          type: string;
+          value: string;
+          designation: string;
+          name: string;
         }
       ];
       htmlForm: {
-        htmlAction: String;
-        htmlName: String;
-        htmlMethod: String;
+        htmlAction: string;
+        htmlName: string;
+        htmlMethod: string;
       };
     };
   }>;
