@@ -1,8 +1,8 @@
 export declare class OPVault {
-  constructor(profile: JSON, items: Object);
+  constructor(profile: Object, items: Object);
   unlock(masterPassword: string): Promise<true>;
-  isUnlocked(): Boolean;
-  lock(): Boolean;
+  isUnlocked(): boolean;
+  lock(): boolean;
   loadItems(): Promise<Object>;
   getItem(
     title: string
