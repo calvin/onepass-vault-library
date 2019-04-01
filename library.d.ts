@@ -24,9 +24,9 @@ export type OPItem = {
   overview: {
     title: string;
     url: string;
-    tags: Array;
+    tags: Array<any>;
     uuid: string;
-    URLs: Array;
+    URLs: Array<any>;
   };
   detail: {
     fields: [OPField];
