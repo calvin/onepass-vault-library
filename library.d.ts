@@ -3,7 +3,7 @@ export declare class OPVault {
   unlock(masterPassword: String): Promise<true>;
   isUnlocked(): Boolean;
   lock(): Boolean;
-  loadItems(): Object;
+  loadItems(): Promise<Object>;
   getItem(
     title: String
   ): Promise<{
