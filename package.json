@@ -2,7 +2,8 @@
   "name": "onepass-vault-library",
   "version": "1.0.0",
   "description": "Javascript library to work with onepass vaults.",
-  "main": "library.js",
+  "main": "./lib/library.js",
+  "types": "./lib/library.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
