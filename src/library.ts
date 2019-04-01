@@ -5,8 +5,47 @@
  * OPVault design https://support.1password.com/opvault-design/
  */
 
-export default class OPVault {
-  constructor(profile, items) {
+export interface Vault {
+  unlock: (masterPassword: string) => Promise<true>;
+  isUnlocked(): boolean;
+  lock(): boolean;
+  loadItems(): Promise<Object>;
+  getItem: (title: string) => Promise<OPItem>;
+}
+
+export interface OPItem {
+  overview: OPOverview;
+  detail: OPDetail;
+}
+
+export interface OPDetail {
+  fields: [
+    {
+      type: string;
+      value: string;
+      designation: string;
+      name: string;
+    }
+  ];
+  htmlForm: { htmlAction: string; htmlName: string; htmlMethod: string };
+}
+
+export interface OPOverview {
+  title: string;
+  url: string;
+  tags: Array<any>;
+  uuid: string;
+  URLs: Array<any>;
+}
+
+export default class OPVault implements Vault {
+  _items: any;
+  _profileJson: any;
+  _itemIndex: any;
+  _masterKeys: any;
+  _overviewKeys: any;
+
+  constructor(profile: any, items: any) {
     this._profileJson = profile;
     this._items = items;
   }
@@ -15,7 +54,7 @@ export default class OPVault {
     return this._itemIndex;
   }
 
-  async unlock(masterPassword) {
+  async unlock(masterPassword: any): Promise<true> {
     const salt = this._base64DecodeString(this._profileJson.salt);
     const iterations = this._profileJson.iterations;
 
@@ -38,14 +77,15 @@ export default class OPVault {
     return true;
   }
 
-  isUnlocked() {
+  isUnlocked(): boolean {
     return Boolean(this._masterKeys && this._overviewKeys);
   }
 
-  async _deriveKeys(masterPassword, salt, iterations) {
+  async _deriveKeys(masterPassword: any, salt: any, iterations: number) {
     const masterPasswordKey = await window.crypto.subtle.importKey(
       "raw",
       new TextEncoder().encode(masterPassword),
+      //@ts-ignore
       { name: "PBKDF2" },
       false /* extractable */,
       ["deriveBits"]
@@ -66,17 +106,17 @@ export default class OPVault {
     };
   }
 
-  async masterKeys(derivedKeys) {
+  async masterKeys(derivedKeys: any) {
     const encrypted = this._base64DecodeString(this._profileJson.masterKey);
     return this.decryptKeys(encrypted, derivedKeys);
   }
 
-  async overviewKeys(derivedKeys) {
+  async overviewKeys(derivedKeys: any) {
     const encrypted = this._base64DecodeString(this._profileJson.overviewKey);
     return this.decryptKeys(encrypted, derivedKeys);
   }
 
-  async decryptKeys(encryptedKey, derivedKeys) {
+  async decryptKeys(encryptedKey: any, derivedKeys: any) {
     const keyBase = await this.decryptOpdata(encryptedKey, derivedKeys);
     const digest = await window.crypto.subtle.digest(
       { name: "SHA-512" },
@@ -88,7 +128,7 @@ export default class OPVault {
     };
   }
 
-  async decryptOpdata(cipherText, cipherKeys) {
+  async decryptOpdata(cipherText: any, cipherKeys: any) {
     const keyData = cipherText.slice(0, -32);
     const macData = cipherText.slice(-32);
 
@@ -106,7 +146,7 @@ export default class OPVault {
     return plaintext.slice(-plaintextSize);
   }
 
-  async checkHmac(data, hmacKey, desiredHmac) {
+  async checkHmac(data: any, hmacKey: any, desiredHmac: any) {
     const key = await window.crypto.subtle.importKey(
       "raw",
       hmacKey,
@@ -119,6 +159,7 @@ export default class OPVault {
     );
 
     const isValid = await window.crypto.subtle.verify(
+      //@ts-ignore
       { name: "HMAC" },
       key,
       desiredHmac,
@@ -146,7 +187,7 @@ export default class OPVault {
     return this._itemIndex;
   }
 
-  async itemKeys(item) {
+  async itemKeys(item: any) {
     const itemKey = this._base64DecodeString(item.k);
     const keyData = itemKey.slice(0, -32);
     const macData = itemKey.slice(-32);
@@ -165,7 +206,7 @@ export default class OPVault {
     };
   }
 
-  async itemOverview(item) {
+  async itemOverview(item: any): Promise<OPOverview> {
     const overviewData = this._base64DecodeString(item.o);
     const overview = await this.decryptOpdata(overviewData, this._overviewKeys);
     const itemData = JSON.parse(new TextDecoder().decode(overview));
@@ -173,14 +214,14 @@ export default class OPVault {
     return itemData;
   }
 
-  async itemDetail(item) {
+  async itemDetail(item: any): Promise<OPDetail> {
     const data = this._base64DecodeString(item.d);
     const itemKeys = await this.itemKeys(item);
     const detail = await this.decryptOpdata(data, itemKeys);
     return JSON.parse(new TextDecoder().decode(detail));
   }
 
-  async getItem(title) {
+  async getItem(title: string): Promise<OPItem> {
     const uuid = this._itemIndex[title];
     const item = this._items[uuid];
     return {
@@ -189,7 +230,7 @@ export default class OPVault {
     };
   }
 
-  async decryptData(key, iv, data) {
+  async decryptData(key: any, iv: any, data: any) {
     // NOTE(keanulee): OPVault uses a custom padding scheme for AES-CBC
     // (https://support.1password.com/opvault-design/#opdata01), but Web Cryptography API
     // requires PKCS#7 (https://www.w3.org/TR/WebCryptoAPI/#aes-cbc-description).
@@ -198,9 +239,11 @@ export default class OPVault {
     // using the same key and the last 16 bytes of the data as the initialization vector.
     // We append the first block (16 bytes) of the result to the data before decrypting.
 
+    //@ts-ignore
     const cryptoKey = await window.crypto.subtle.importKey(
       "raw",
       key,
+      //@ts-ignore
       { name: "AES-CBC" },
       false /* extractable */,
       ["encrypt", "decrypt"]
@@ -252,7 +295,7 @@ export default class OPVault {
   }
 
   // https://stackoverflow.com/questions/21797299/convert-base64-string-to-arraybuffer
-  _base64DecodeString(base64) {
+  _base64DecodeString(base64: any) {
     const b = window.atob(base64),
       n = b.length,
       a = new Uint8Array(n);

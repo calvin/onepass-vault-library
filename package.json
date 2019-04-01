@@ -4,8 +4,12 @@
   "description": "Javascript library to work with onepass vaults.",
   "main": "library.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
   },
+  "files": [
+    "lib/**/*"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/allroundexperts/onepass-vault-library.git"
@@ -22,5 +26,8 @@
   "bugs": {
     "url": "https://github.com/allroundexperts/onepass-vault-library/issues"
   },
-  "homepage": "https://github.com/allroundexperts/onepass-vault-library#readme"
+  "homepage": "https://github.com/allroundexperts/onepass-vault-library#readme",
+  "devDependencies": {
+    "typescript": "^3.4.1"
+  }
 }
