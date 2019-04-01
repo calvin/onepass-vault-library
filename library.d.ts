@@ -1,4 +1,4 @@
-declare class OpVault {
+export declare class OPVault {
   constructor(profile: JSON, items: Object);
   unlock(masterPassword: String): Promise<true>;
   isUnlocked(): Boolean;
