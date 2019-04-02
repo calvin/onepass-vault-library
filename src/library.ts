@@ -177,9 +177,9 @@ export default class OPVault implements Vault {
     for (let uuid in this._items) {
       const item = this._items[uuid];
       const overview = await this.itemOverview(item);
-      if (overview.title) {
+      if (overview.url) {
         if (!excludeTrashed || !item.trashed) {
-          this._itemIndex[overview.title] = uuid;
+          this._itemIndex[overview.url] = uuid;
         }
       }
     }
@@ -221,9 +221,9 @@ export default class OPVault implements Vault {
     return JSON.parse(new TextDecoder().decode(detail));
   }
 
-  async getItem(title: string): Promise<OPItem> {
-    if (this._itemIndex.hasOwnProperty(title)) {
-      const uuid = this._itemIndex[title];
+  async getItem(fqdn: string): Promise<OPItem> {
+    if (this._itemIndex.hasOwnProperty(fqdn)) {
+      const uuid = this._itemIndex[fqdn];
       const item = this._items[uuid];
       return {
         overview: await this.itemOverview(item),
