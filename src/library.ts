@@ -179,8 +179,12 @@ export default class OPVault implements Vault {
       const overview = await this.itemOverview(item);
       if (overview.url) {
         if (!excludeTrashed || !item.trashed) {
-          const url = new URL(overview.url).hostname;
-          this._itemIndex[url] = uuid;
+          try {
+            const url = new URL(overview.url).hostname;
+            this._itemIndex[url] = uuid;
+          } catch (e) {
+            overview.title ? (this._itemIndex[overview.title] = uuid) : null;
+          }
         }
       }
     }
