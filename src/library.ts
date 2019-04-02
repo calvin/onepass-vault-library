@@ -166,7 +166,7 @@ export default class OPVault implements Vault {
       data
     );
     if (!isValid) {
-      throw new Error("DecodeError: Error checking HMAC");
+      throw new Error("Invalid Credentials.");
     }
 
     return true;
@@ -222,12 +222,16 @@ export default class OPVault implements Vault {
   }
 
   async getItem(title: string): Promise<OPItem> {
-    const uuid = this._itemIndex[title];
-    const item = this._items[uuid];
-    return {
-      overview: await this.itemOverview(item),
-      detail: await this.itemDetail(item)
-    };
+    if (this._itemIndex.hasOwnProperty(title)) {
+      const uuid = this._itemIndex[title];
+      const item = this._items[uuid];
+      return {
+        overview: await this.itemOverview(item),
+        detail: await this.itemDetail(item)
+      };
+    } else {
+      throw new Error("No item found.");
+    }
   }
 
   async decryptData(key: any, iv: any, data: any) {
