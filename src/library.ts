@@ -27,7 +27,10 @@ export interface OPDetail {
       name: string;
     }
   ];
-  htmlForm: { htmlAction: string; htmlName: string; htmlMethod: string };
+  sections?: [
+    { title: string; name: string; fields?: [{ k: string; v: string }] }
+  ];
+  htmlForm?: { htmlAction: string; htmlName: string; htmlMethod: string };
 }
 
 export interface OPOverview {

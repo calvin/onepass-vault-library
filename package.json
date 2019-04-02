@@ -1,6 +1,6 @@
 {
   "name": "onepass-vault-library",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Javascript library to work with onepass vaults.",
   "main": "./lib/library.js",
   "types": "./lib/library.d.ts",
