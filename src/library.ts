@@ -47,10 +47,12 @@ export default class OPVault implements Vault {
   _itemIndex: any;
   _masterKeys: any;
   _overviewKeys: any;
+  _type: string;
 
-  constructor(profile: any, items: any) {
+  constructor(profile: any, items: any, _type: string = "json") {
     this._profileJson = profile;
     this._items = items;
+    this._type = _type;
   }
 
   getItems() {
@@ -58,7 +60,10 @@ export default class OPVault implements Vault {
   }
 
   async unlock(masterPassword: any): Promise<true> {
-    const salt = this._base64DecodeString(this._profileJson.salt);
+    const salt =
+      this._type === "json"
+        ? this._base64DecodeString(this._profileJson.salt)
+        : this._profileJson.salt;
     const iterations = this._profileJson.iterations;
 
     const derivedKeys = await this._deriveKeys(
@@ -110,12 +115,18 @@ export default class OPVault implements Vault {
   }
 
   async masterKeys(derivedKeys: any) {
-    const encrypted = this._base64DecodeString(this._profileJson.masterKey);
+    const encrypted =
+      this._type === "json"
+        ? this._base64DecodeString(this._profileJson.masterKey)
+        : this._profileJson.masterKey;
     return this.decryptKeys(encrypted, derivedKeys);
   }
 
   async overviewKeys(derivedKeys: any) {
-    const encrypted = this._base64DecodeString(this._profileJson.overviewKey);
+    const encrypted =
+      this._type === "json"
+        ? this._base64DecodeString(this._profileJson.overviewKey)
+        : this._profileJson.overviewKey;
     return this.decryptKeys(encrypted, derivedKeys);
   }
 
@@ -196,7 +207,8 @@ export default class OPVault implements Vault {
   }
 
   async itemKeys(item: any) {
-    const itemKey = this._base64DecodeString(item.k);
+    const itemKey =
+      this._type === "json" ? this._base64DecodeString(item.k) : item.k;
     const keyData = itemKey.slice(0, -32);
     const macData = itemKey.slice(-32);
 
@@ -215,7 +227,7 @@ export default class OPVault implements Vault {
   }
 
   async itemOverview(item: any): Promise<OPOverview> {
-    const overviewData = this._base64DecodeString(item.o);
+    const overviewData = this._type ? this._base64DecodeString(item.o) : item.o;
     const overview = await this.decryptOpdata(overviewData, this._overviewKeys);
     const itemData = JSON.parse(new TextDecoder().decode(overview));
     itemData.uuid = item.uuid;
@@ -223,7 +235,7 @@ export default class OPVault implements Vault {
   }
 
   async itemDetail(item: any): Promise<OPDetail> {
-    const data = this._base64DecodeString(item.d);
+    const data = this._type ? this._base64DecodeString(item.d) : item.d;
     const itemKeys = await this.itemKeys(item);
     const detail = await this.decryptOpdata(data, itemKeys);
     return JSON.parse(new TextDecoder().decode(detail));
