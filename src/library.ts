@@ -227,7 +227,8 @@ export default class OPVault implements Vault {
   }
 
   async itemOverview(item: any): Promise<OPOverview> {
-    const overviewData = this._type ? this._base64DecodeString(item.o) : item.o;
+    const overviewData =
+      this._type === "json" ? this._base64DecodeString(item.o) : item.o;
     const overview = await this.decryptOpdata(overviewData, this._overviewKeys);
     const itemData = JSON.parse(new TextDecoder().decode(overview));
     itemData.uuid = item.uuid;
@@ -235,7 +236,8 @@ export default class OPVault implements Vault {
   }
 
   async itemDetail(item: any): Promise<OPDetail> {
-    const data = this._type ? this._base64DecodeString(item.d) : item.d;
+    const data =
+      this._type === "json" ? this._base64DecodeString(item.d) : item.d;
     const itemKeys = await this.itemKeys(item);
     const detail = await this.decryptOpdata(data, itemKeys);
     return JSON.parse(new TextDecoder().decode(detail));
