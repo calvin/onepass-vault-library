@@ -388,7 +388,7 @@ export default class OPVault implements Vault {
     iv: any
   ) => {
     const opData01 = new Uint8Array([111, 112, 100, 97, 116, 97, 48, 49]);
-    const length = new Uint8Array([data.byteLength, 0, 0, 0, 0, 0, 0, 0]);
+    const length = this._splitToByte(data.byteLength);
     const extraData = window.crypto.getRandomValues(
       new Uint8Array(data.byteLength % 16)
     );
@@ -425,8 +425,8 @@ export default class OPVault implements Vault {
   ): Promise<Uint8Array> => {
     let mergedArray: Array<number> = [];
     let length = 0;
-    keys.map((key: any, index) => {
-      for (let i = 0; i <= key.byteLength - 1; i++) {
+    keys.map((key: any) => {
+      for (let i = 0; i < key.byteLength; i++) {
         mergedArray[length + i] = key[i];
       }
       length += key.byteLength;
@@ -492,9 +492,24 @@ export default class OPVault implements Vault {
 
   _base64EncodeBinary(binary: Uint8Array) {
     let text = "";
-    for (let i = 0; i < binary.byteLength - 1; i++) {
+    for (let i = 0; i < binary.byteLength; i++) {
       text += String.fromCharCode(binary[i]);
     }
     return window.btoa(text);
+  }
+
+  _splitToByte(number: number) {
+    const splitArray = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]);
+    if (number > 255) {
+      const remainder = number % 255;
+      const fulls = (number - remainder) / 255;
+      for (let i = 0; i < fulls; i++) {
+        splitArray[i] = 255;
+      }
+      fulls < 8 ? (splitArray[fulls] = remainder) : null;
+    } else {
+      splitArray[0] = number;
+    }
+    return splitArray;
   }
 }
