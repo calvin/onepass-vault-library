@@ -493,17 +493,11 @@ export default class OPVault implements Vault {
     return window.btoa(text);
   }
 
+  //Javascript does not support 64bit unsigned integers. Using 32bit instead.
   _splitToByte(number: number) {
     const splitArray = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]);
-    if (number > 255) {
-      const remainder = number % 255;
-      const fulls = (number - remainder) / 255;
-      for (let i = 0; i < fulls; i++) {
-        splitArray[i] = 255;
-      }
-      fulls < 8 ? (splitArray[fulls] = remainder) : null;
-    } else {
-      splitArray[0] = number;
+    for (let i = 0; i < 4; i++) {
+      splitArray[i] = number >> (i * 8);
     }
     return splitArray;
   }
