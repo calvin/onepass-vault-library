@@ -1,6 +1,6 @@
 {
   "name": "onepass-vault-library",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Javascript library to work with onepass vaults.",
   "main": "./lib/library.js",
   "types": "./lib/library.d.ts",
@@ -16,7 +16,9 @@
     "url": "git+https://github.com/allroundexperts/onepass-vault-library.git"
   },
   "keywords": [
+    "1password",
     "Onepass",
+    "onepassword",
     "opvault",
     "nodeJS",
     "javascript",

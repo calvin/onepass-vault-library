@@ -312,7 +312,7 @@ export default class OPVault implements Vault {
     );
     const suffix = new Uint8Array(suffixBuffer, 0, 16);
 
-    const paddedData = await this._mergeArrayBuffers([data, suffix]);
+    const paddedData = this._mergeArrayBuffers([data, suffix]);
 
     return window.crypto.subtle.decrypt(
       {
@@ -324,24 +324,21 @@ export default class OPVault implements Vault {
     );
   }
 
-  createEntry = async ({ detail, overview }: any) => {
+  async createEntry({ detail, overview }: any) {
     const encoder = new TextEncoder();
     const itemKeys = await this._generateKeyPair();
-    const iv = this._generateIV();
-    const k = await this._encryptItemKeys(itemKeys, iv);
+    const k = await this._encryptItemKeys(itemKeys);
     const overviewKeys = await this._getCryptoKeys(this._overviewKeys);
     const o = await this._encryptOpData(
       encoder.encode(JSON.stringify(overview)),
-      overviewKeys,
-      iv
+      overviewKeys
     );
     const d = await this._encryptOpData(
       encoder.encode(JSON.stringify(detail)),
-      itemKeys,
-      iv
+      await this._getCryptoKeys(itemKeys)
     );
     return { d, o, k };
-  };
+  }
 
   //itemkey encrypted using master key.
   //a = encrypt(itemkey)
@@ -354,75 +351,73 @@ export default class OPVault implements Vault {
   // c = mac data = 256bits = 32 bytes
   // total = 16+32+32+32 = 112bytes
 
-  _encryptItemKeys = async (itemKeys: any, iv: any) => {
+  async _encryptItemKeys(itemKeys: any) {
+    const iv = this._generateIV();
     const masterKeys = await this._getCryptoKeys(this._masterKeys);
-
-    const combinedKey = await this._mergeArrayBuffers([
-      itemKeys.encryptionKey,
-      itemKeys.macKey
+    const combinedKey = this._mergeArrayBuffers([
+      new Uint8Array(itemKeys.encryptionKey),
+      new Uint8Array(itemKeys.macKey)
     ]);
-
-    const ek = await crypto.subtle.encrypt(
-      { name: "AES-CBC", iv: iv },
-      masterKeys.encryptionKey,
-      combinedKey
+    //Removing the default pkcs#7 padding (16 bits) as opvault
+    //implements it's own custom padding.
+    const ek = new Uint8Array(
+      await window.crypto.subtle.encrypt(
+        { name: "AES-CBC", iv: iv },
+        masterKeys.encryptionKey,
+        combinedKey
+      )
+    ).slice(0, -16);
+    const encryptedKeyWithIV = this._mergeArrayBuffers([iv, ek]);
+    const hash = new Uint8Array(
+      await window.crypto.subtle.sign(
+        { name: "HMAC", hash: "SHA-256", length: 256 },
+        masterKeys.macKey,
+        encryptedKeyWithIV
+      )
     );
-
-    const encryptedKeyWithIV = await this._mergeArrayBuffers([ek, iv]);
-
-    const hash = await crypto.subtle.sign(
-      { name: "HMAC", hash: "SHA-256" },
-      masterKeys.macKey,
-      encryptedKeyWithIV
-    );
-
-    const encrypted = await this._mergeArrayBuffers([encryptedKeyWithIV, hash]);
+    const encrypted = this._mergeArrayBuffers([encryptedKeyWithIV, hash]);
     return this._type === "json"
       ? this._base64EncodeBinary(encrypted)
       : encrypted;
-  };
+  }
 
-  _encryptOpData = async (
-    data: any,
-    { encryptionKey, macKey }: any,
-    iv: any
-  ) => {
+  async _encryptOpData(data: any, { encryptionKey, macKey }: any) {
+    const iv = this._generateIV();
     const opData01 = new Uint8Array([111, 112, 100, 97, 116, 97, 48, 49]);
     const length = this._splitToByte(data.byteLength);
+    const remainder = data.byteLength % 16;
     const extraData = window.crypto.getRandomValues(
-      new Uint8Array(data.byteLength % 16)
+      new Uint8Array(remainder === 0 ? 16 : 16 - remainder)
     );
-    const paddedData = await this._mergeArrayBuffers([data, extraData]);
-    const combinedData = await this._mergeArrayBuffers([
-      opData01,
-      length,
-      iv,
-      paddedData
-    ]);
-
-    const encryptedData = await window.crypto.subtle.encrypt(
-      {
-        name: "AES-CBC",
-        iv
-      },
-      encryptionKey,
-      paddedData
+    const paddedData = this._mergeArrayBuffers([extraData, data]);
+    const header = this._mergeArrayBuffers([opData01, length, iv]);
+    //Removing the default pkcs#7 padding (16 bits) as opvault
+    //implements it's own custom padding.
+    const encryptedData = new Uint8Array(
+      await window.crypto.subtle.encrypt(
+        {
+          name: "AES-CBC",
+          iv
+        },
+        encryptionKey,
+        paddedData
+      )
+    ).slice(0, -16);
+    const combinedData = this._mergeArrayBuffers([header, encryptedData]);
+    const hash = new Uint8Array(
+      await window.crypto.subtle.sign(
+        { name: "HMAC", hash: "SHA-256", length: 256 },
+        macKey,
+        combinedData
+      )
     );
-
-    const hash = await window.crypto.subtle.sign(
-      { name: "HMAC", hash: "SHA-256" },
-      macKey,
-      combinedData
-    );
-    const encrypted = await this._mergeArrayBuffers([encryptedData, hash]);
+    const encrypted = this._mergeArrayBuffers([combinedData, hash]);
     return this._type === "json"
       ? this._base64EncodeBinary(encrypted)
       : encrypted;
-  };
+  }
 
-  _mergeArrayBuffers = async (
-    keys: Array<ArrayBuffer>
-  ): Promise<Uint8Array> => {
+  _mergeArrayBuffers(keys: Array<Uint8Array>): Uint8Array {
     let mergedArray: Array<number> = [];
     let length = 0;
     keys.map((key: any) => {
@@ -432,33 +427,33 @@ export default class OPVault implements Vault {
       length += key.byteLength;
     });
     return new Uint8Array(mergedArray);
-  };
+  }
 
-  _generateKeyPair = async () => {
-    const encryptionKeyCrypto = await crypto.subtle.generateKey(
+  async _generateKeyPair() {
+    const encryptionKeyCrypto = await window.crypto.subtle.generateKey(
       { name: "AES-CBC", length: 256 },
       true,
       ["encrypt", "decrypt"]
     );
 
-    const macKeyCrypto = await crypto.subtle.generateKey(
-      { name: "HMAC", length: 256 },
+    const macKeyCrypto = await window.crypto.subtle.generateKey(
+      { name: "HMAC", hash: "SHA-256", length: 256 },
       true,
       ["sign"]
     );
-    const encryptionKey = await crypto.subtle.exportKey(
+    const encryptionKey = await window.crypto.subtle.exportKey(
       "raw",
       encryptionKeyCrypto
     );
-    const macKey = await crypto.subtle.exportKey("raw", macKeyCrypto);
+    const macKey = await window.crypto.subtle.exportKey("raw", macKeyCrypto);
     return { encryptionKey, macKey };
-  };
+  }
 
-  _generateIV = () => {
+  _generateIV() {
     return window.crypto.getRandomValues(new Uint8Array(16));
-  };
+  }
 
-  _getCryptoKeys = async (key: any) => {
+  async _getCryptoKeys(key: any) {
     const cryptoKey = await window.crypto.subtle.importKey(
       "raw",
       key.encryptionKey,
@@ -477,7 +472,7 @@ export default class OPVault implements Vault {
       ["sign"]
     );
     return { encryptionKey: cryptoKey, macKey: cryptoKeyMac };
-  };
+  }
 
   // https://stackoverflow.com/questions/21797299/convert-base64-string-to-arraybuffer
   _base64DecodeString(base64: any) {
