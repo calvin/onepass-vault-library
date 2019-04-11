@@ -337,7 +337,19 @@ export default class OPVault implements Vault {
       encoder.encode(JSON.stringify(detail)),
       await this._getCryptoKeys(itemKeys)
     );
-    return { d, o, k };
+    const date = Math.floor(Date.now() / 1000);
+    const returnData = {
+      category: "001",
+      created: date,
+      d,
+      k,
+      o,
+      tx: date,
+      updated: date,
+      uuid: overview.uuid
+    };
+    const hmac = await this._generateHMAC(returnData);
+    return { ...returnData, hmac };
   }
 
   //itemkey encrypted using master key.
@@ -351,7 +363,7 @@ export default class OPVault implements Vault {
   // c = mac data = 256bits = 32 bytes
   // total = 16+32+32+32 = 112bytes
 
-  async _encryptItemKeys(itemKeys: any) {
+  private async _encryptItemKeys(itemKeys: any) {
     const iv = this._generateIV();
     const masterKeys = await this._getCryptoKeys(this._masterKeys);
     const combinedKey = this._mergeArrayBuffers([
@@ -381,7 +393,7 @@ export default class OPVault implements Vault {
       : encrypted;
   }
 
-  async _encryptOpData(data: any, { encryptionKey, macKey }: any) {
+  private async _encryptOpData(data: any, { encryptionKey, macKey }: any) {
     const iv = this._generateIV();
     const opData01 = new Uint8Array([111, 112, 100, 97, 116, 97, 48, 49]);
     const length = this._splitToByte(data.byteLength);
@@ -417,7 +429,7 @@ export default class OPVault implements Vault {
       : encrypted;
   }
 
-  _mergeArrayBuffers(keys: Array<Uint8Array>): Uint8Array {
+  private _mergeArrayBuffers(keys: Array<Uint8Array>): Uint8Array {
     let mergedArray: Array<number> = [];
     let length = 0;
     keys.map((key: any) => {
@@ -429,7 +441,7 @@ export default class OPVault implements Vault {
     return new Uint8Array(mergedArray);
   }
 
-  async _generateKeyPair() {
+  private async _generateKeyPair() {
     const encryptionKeyCrypto = await window.crypto.subtle.generateKey(
       { name: "AES-CBC", length: 256 },
       true,
@@ -453,7 +465,7 @@ export default class OPVault implements Vault {
     return window.crypto.getRandomValues(new Uint8Array(16));
   }
 
-  async _getCryptoKeys(key: any) {
+  private async _getCryptoKeys(key: any) {
     const cryptoKey = await window.crypto.subtle.importKey(
       "raw",
       key.encryptionKey,
@@ -475,7 +487,7 @@ export default class OPVault implements Vault {
   }
 
   // https://stackoverflow.com/questions/21797299/convert-base64-string-to-arraybuffer
-  _base64DecodeString(base64: any) {
+  private _base64DecodeString(base64: any) {
     const b = window.atob(base64),
       n = b.length,
       a = new Uint8Array(n);
@@ -485,7 +497,7 @@ export default class OPVault implements Vault {
     return a;
   }
 
-  _base64EncodeBinary(binary: Uint8Array) {
+  private _base64EncodeBinary(binary: Uint8Array) {
     let text = "";
     for (let i = 0; i < binary.byteLength; i++) {
       text += String.fromCharCode(binary[i]);
@@ -494,11 +506,30 @@ export default class OPVault implements Vault {
   }
 
   //Javascript does not support 64bit unsigned integers. Using 32bit instead.
-  _splitToByte(number: number) {
+  private _splitToByte(number: number) {
     const splitArray = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]);
     for (let i = 0; i < 4; i++) {
       splitArray[i] = number >> (i * 8);
     }
     return splitArray;
   }
+
+  private _generateHMAC = async (data: any) => {
+    const { macKey } = await this._getCryptoKeys(this._overviewKeys);
+    const dataArray: Array<Uint8Array> = [];
+    Object.keys(data).map(key => {
+      dataArray.push(new TextEncoder().encode(key));
+      dataArray.push(
+        data[key].hasOwnProperty("byteLength")
+          ? data[key]
+          : new TextEncoder().encode(data[key])
+      );
+    });
+    const mergedData = this._mergeArrayBuffers(dataArray);
+    return this._base64EncodeBinary(
+      new Uint8Array(
+        await window.crypto.subtle.sign("HMAC", macKey, mergedData)
+      )
+    );
+  };
 }
