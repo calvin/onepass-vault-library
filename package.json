@@ -1,10 +1,10 @@
 {
   "name": "onepass-vault-library",
-  "version": "1.1.4",
+  "version": "1.1.9",
   "description": "Javascript library to work with onepass vaults.",
-  "main": "./dist/library.js",
+  "main": "dist/library.js",
   "files": [
-    "./dist/**/*"
+    "dist/**/*"
   ],
   "scripts": {
     "build": "webpack --config webpack.config.js",

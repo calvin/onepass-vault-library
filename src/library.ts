@@ -1,4 +1,3 @@
-import { Vault, OPItem, OPDetail, OPOverview } from "./interface";
 import {
   randomBytes,
   pbkdf2Sync,
@@ -8,7 +7,7 @@ import {
   createDecipheriv
 } from "crypto";
 
-export default class OPVault implements Vault {
+export default class OPVault {
   items: any;
   profileJson: any;
   itemIndex: any;
@@ -104,7 +103,7 @@ export default class OPVault implements Vault {
     return this.itemIndex;
   };
 
-  getItem = (fqdn: string): OPItem => {
+  getItem = (fqdn: string) => {
     if (this.itemIndex.hasOwnProperty(fqdn)) {
       const uuid = this.itemIndex[fqdn];
       const item = this.items[uuid];
@@ -204,7 +203,7 @@ export default class OPVault implements Vault {
     };
   };
 
-  private itemOverview = (item: any): OPOverview => {
+  private itemOverview = (item: any) => {
     const overviewData =
       this.type === "json"
         ? Buffer.from(item.o, "base64")
@@ -215,7 +214,7 @@ export default class OPVault implements Vault {
     return itemData;
   };
 
-  private itemDetail = (item: any): OPDetail => {
+  private itemDetail = (item: any) => {
     const data =
       this.type === "json"
         ? Buffer.from(item.d, "base64")
