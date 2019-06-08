@@ -103,9 +103,14 @@ export default class OPVault {
     return this.itemIndex;
   };
 
-  getItem = (fqdn: string) => {
-    if (this.itemIndex.hasOwnProperty(fqdn)) {
-      const uuid = this.itemIndex[fqdn];
+  getItem = (keyword: string) => {
+    const keys = Object.keys(this.itemIndex);
+    const index = keys
+      .map(url => url.search(new RegExp(keyword)) > -1)
+      .indexOf(true);
+
+    if (index > -1) {
+      const uuid = this.itemIndex[keys[index]];
       const item = this.items[uuid];
       return {
         overview: this.itemOverview(item),
