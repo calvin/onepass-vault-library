@@ -205,7 +205,7 @@ export default class OPVault {
     };
   };
 
-  private itemOverview = (item: any) => {
+  itemOverview = (item: any) => {
     const overviewData =
       this.type === "json"
         ? Buffer.from(item.o, "base64")
@@ -216,7 +216,7 @@ export default class OPVault {
     return itemData;
   };
 
-  private itemDetail = (item: any) => {
+  itemDetail = (item: any) => {
     const data =
       this.type === "json"
         ? Buffer.from(item.d, "base64")

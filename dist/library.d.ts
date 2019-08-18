@@ -34,8 +34,8 @@ export default class OPVault {
     private decryptOpdata;
     private checkHmac;
     private itemKeys;
-    private itemOverview;
-    private itemDetail;
+    itemOverview: (item: any) => any;
+    itemDetail: (item: any) => any;
     decryptData: (key: Buffer, iv: Buffer, data: Buffer) => Buffer;
     private encryptItemKeys;
     private encryptOpData;
