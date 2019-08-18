@@ -158,10 +158,7 @@ export default class OPVault {
       keyData.slice(16, 32),
       keyData.slice(32)
     );
-    //keyData.slice(8,24).readUInt32LE(0).;
-    const dv = new DataView(keyData.buffer, 8, 16);
-    // TODO: should be unsigned 64-bit int, but that's not a DataView method.
-    const plaintextSize = dv.getUint32(0, true /* littleEndian */);
+    const plaintextSize = keyData.slice(8, 24).readUInt32LE(0);
     return plaintext.slice(-plaintextSize);
   };
 

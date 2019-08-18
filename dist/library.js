@@ -125,10 +125,7 @@ var OPVault = /** @class */ (function () {
             var macData = cipherText.slice(-32);
             _this.checkHmac(keyData, cipherKeys.macKey, macData);
             var plaintext = _this.decryptData(cipherKeys.encryptionKey, keyData.slice(16, 32), keyData.slice(32));
-            //keyData.slice(8,24).readUInt32LE(0).;
-            var dv = new DataView(keyData.buffer, 8, 16);
-            // TODO: should be unsigned 64-bit int, but that's not a DataView method.
-            var plaintextSize = dv.getUint32(0, true /* littleEndian */);
+            var plaintextSize = keyData.slice(8, 24).readUInt32LE(0);
             return plaintext.slice(-plaintextSize);
         };
         this.checkHmac = function (data, hmacKey, desiredHmac) {
